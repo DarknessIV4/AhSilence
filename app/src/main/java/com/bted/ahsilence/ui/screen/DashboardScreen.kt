@@ -15,8 +15,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.bted.ahsilence.R
 import com.bted.ahsilence.domain.model.AcousticState
 import com.bted.ahsilence.ui.component.CalibratorRing
 import com.bted.ahsilence.ui.component.GainSlider
@@ -68,7 +70,7 @@ fun DashboardScreen(
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = "PRO",
+                    text = stringResource(R.string.pro_label),
                     color = if (isProMode) accentNeon else textMuted,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
@@ -87,9 +89,9 @@ fun DashboardScreen(
         ) {
             Text(
                 text = if (state.isEmitting) {
-                    if (isProMode) "ACTIVE HUM CANCELLATION" else "SILENCING ACTIVE"
+                    if (isProMode) stringResource(R.string.status_active_pro) else stringResource(R.string.status_active_friendly)
                 } else {
-                    if (isProMode) "SYSTEM IDLE" else "READY"
+                    if (isProMode) stringResource(R.string.status_idle_pro) else stringResource(R.string.status_idle_friendly)
                 },
                 color = if (state.isEmitting) accentNeon else textMuted,
                 fontSize = 12.sp,
@@ -101,9 +103,9 @@ fun DashboardScreen(
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     text = if (state.detectedFrequencyHz > 0) {
-                        if (isProMode) String.format("%.1f", state.detectedFrequencyHz) else "MAX"
+                        if (isProMode) String.format("%.1f", state.detectedFrequencyHz) else stringResource(R.string.freq_max)
                     } else {
-                        "--"
+                        stringResource(R.string.freq_empty)
                     },
                     color = textActive,
                     fontSize = 72.sp,
@@ -113,7 +115,7 @@ fun DashboardScreen(
 
                 if (isProMode) {
                     Text(
-                        text = " Hz",
+                        text = stringResource(R.string.freq_unit),
                         color = textMuted,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Light,
@@ -145,7 +147,7 @@ fun DashboardScreen(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = if (isProMode) "GAIN" else "VOLUME",
+                        text = if (isProMode) stringResource(R.string.gain_label_pro) else stringResource(R.string.gain_label_friendly),
                         color = textMuted,
                         fontSize = 10.sp,
                         letterSpacing = 2.sp,
@@ -186,7 +188,7 @@ fun DashboardScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = if (isProMode) "PHASE SHIFT" else "FINE TUNE",
+                            text = if (isProMode) stringResource(R.string.phase_label_pro) else stringResource(R.string.phase_label_friendly),
                             color = textMuted,
                             fontSize = 10.sp,
                             letterSpacing = 2.sp,
@@ -230,9 +232,9 @@ fun DashboardScreen(
         ) {
             Text(
                 text = if (state.isEmitting) {
-                    if (isProMode) "TERMINATE ENGINE" else "STOP"
+                    if (isProMode) stringResource(R.string.btn_terminate_pro) else stringResource(R.string.btn_stop_friendly)
                 } else {
-                    if (isProMode) "ENGAGE NULLING" else "START SILENCE"
+                    if (isProMode) stringResource(R.string.btn_engage_pro) else stringResource(R.string.btn_start_friendly)
                 },
                 color = if (state.isEmitting) accentNeon else textMuted,
                 fontSize = 14.sp,

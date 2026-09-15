@@ -60,11 +60,8 @@ class MainActivity : ComponentActivity() {
                     onPhaseChanged = { newPhase -> viewModel.updatePhase(newPhase) },
                     onAmplitudeChanged = { newAmp -> viewModel.updateAmplitude(newAmp) },
                     onTogglePower = {
-                        // 1. Update the internal state machine
-                        viewModel.togglePowerStatus()
-
-                        // 2. Translate the state change to an Android OS Service Intent
-                        if (!uiState.isEmitting) {
+                        val isNowEmitting = viewModel.togglePowerStatus()
+                        if (isNowEmitting) {
                             startAcousticService()
                         } else {
                             stopAcousticService()

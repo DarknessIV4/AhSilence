@@ -34,7 +34,9 @@ fun AhSilenceTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
+            @Suppress("DEPRECATION")
             window.statusBarColor = colorScheme.background.toArgb()
+            @Suppress("DEPRECATION")
             window.navigationBarColor = colorScheme.background.toArgb()
 
             val windowInsetsController = WindowCompat.getInsetsController(window, view)

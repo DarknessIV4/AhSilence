@@ -27,6 +27,10 @@ public:
 
     /// Update the tracked frequency. Cheap: just recomputes a phase increment.
     inline void setFrequency(float frequencyHz, float sampleRateHz) noexcept {
+        if (sampleRateHz <= 0.0f || std::isnan(frequencyHz) || frequencyHz <= 0.0f) {
+            mPhaseIncrement = 0.0;
+            return;
+        }
         mPhaseIncrement = (static_cast<double>(frequencyHz) / sampleRateHz) *
                           static_cast<double>(kTableSize);
     }
@@ -41,6 +45,9 @@ public:
      * the frequency-tracking phase itself to jump or drift.
      */
     inline void nextSample(float &outCos, float &outSin, float phaseOffsetRad) noexcept {
+        if (std::isnan(phaseOffsetRad)) {
+            phaseOffsetRad = 0.0f;
+        }
         const double offsetSteps =
                 (static_cast<double>(phaseOffsetRad) * kTableSize) / kTwoPi;
 
@@ -48,13 +55,13 @@ public:
         while (readPhase >= kTableSize) readPhase -= kTableSize;
         while (readPhase < 0.0) readPhase += kTableSize;
 
-        const int index = static_cast<int>(readPhase);
+        const int index = static_cast<int>(readPhase) & (kTableSize - 1);
         outCos = mCosineTable[index];
         outSin = mSineTable[index];
 
         mPhase += mPhaseIncrement;
-        if (mPhase >= kTableSize) mPhase -= kTableSize;
-        else if (mPhase < 0.0) mPhase += kTableSize;
+        while (mPhase >= kTableSize) mPhase -= kTableSize;
+        while (mPhase < 0.0) mPhase += kTableSize;
     }
 
 private:

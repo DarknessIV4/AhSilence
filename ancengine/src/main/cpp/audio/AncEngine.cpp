@@ -80,6 +80,8 @@ oboe::Result AncEngine::start() {
 oboe::Result AncEngine::stop() {
     mIsRunning.store(false, std::memory_order_relaxed);
     oboe::Result result = oboe::FullDuplexStream::stop();
+    setOutputStream(nullptr);
+    setInputStream(nullptr);
     if (mOutputStream) {
         mOutputStream->close();
         mOutputStream.reset();
@@ -164,8 +166,12 @@ void AncEngine::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result error)
     // Runs on a dedicated Oboe-owned thread, never the audio callback thread,
     // so logging here is safe. Typical cause: a route change (headphone
     // plug/unplug, Bluetooth connect) forcing a stream teardown.
-    LOGE("Stream closed after error: %s. direction=%d",
-         oboe::convertToText(error), static_cast<int>(stream->getDirection()));
+    if (stream) {
+        LOGE("Stream closed after error: %s. direction=%d",
+             oboe::convertToText(error), static_cast<int>(stream->getDirection()));
+    } else {
+        LOGE("Stream closed after error: %s.", oboe::convertToText(error));
+    }
     mIsRunning.store(false, std::memory_order_relaxed);
 }
 

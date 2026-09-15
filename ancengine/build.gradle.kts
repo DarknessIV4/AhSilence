@@ -5,11 +5,11 @@ plugins {
 
 android {
     namespace = "com.bted.ahsilence.ancengine"
-    compileSdk = 36
-    ndkVersion = "27.1.12297006"
+    compileSdk = libs.versions.compileSdk.get().toInt()
+    ndkVersion = libs.versions.ndk.get()
 
     defaultConfig {
-        minSdk = 26
+        minSdk = libs.versions.minSdk.get().toInt()
 
         externalNativeBuild {
             cmake {
@@ -34,7 +34,7 @@ android {
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
+            version = libs.versions.cmake.get()
         }
     }
 }

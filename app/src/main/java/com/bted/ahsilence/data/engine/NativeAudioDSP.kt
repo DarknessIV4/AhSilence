@@ -7,7 +7,6 @@ import android.media.MediaRecorder
 import com.bted.ahsilence.core.logging.AppLogger
 import com.bted.ahsilence.domain.port.AudioEngine
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 /**
@@ -40,11 +39,8 @@ class NativeAudioDSP : AudioEngine {
     // AudioManager.getProperty(PROPERTY_OUTPUT_SAMPLE_RATE) rather than a
     // hardcoded value, but correctness here doesn't depend on guessing right
     // since AncEngine re-queries the real negotiated rate after opening.
-    private val preferredSampleRate = 48000
-
-    // Same FFT front-end as before -- still a useful fast cold-start estimate
-    // before native FxLMS takes over continuous tracking.
-    private val fftBufferSize = 8192
+    private val preferredSampleRate = com.bted.ahsilence.core.constants.AudioConstants.SAMPLE_RATE
+    private val fftBufferSize = com.bted.ahsilence.core.constants.AudioConstants.FFT_BUFFER_SIZE
     private val fftEngine = FastFourier(fftBufferSize, preferredSampleRate)
 
     private var nativeHandle: Long = 0L
@@ -56,41 +52,77 @@ class NativeAudioDSP : AudioEngine {
         val minBufferSize = AudioRecord.getMinBufferSize(
             preferredSampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT
         )
-        val record = AudioRecord(
-            MediaRecorder.AudioSource.MIC,
-            preferredSampleRate,
-            AudioFormat.CHANNEL_IN_MONO,
-            AudioFormat.ENCODING_PCM_16BIT,
-            minBufferSize.coerceAtLeast(fftBufferSize * 2)
-        )
-        val readBuffer = ShortArray(fftBufferSize)
-
-        AppLogger.d("Engine: Mic engaged for coarse FFT estimate ($durationSeconds s)...")
-        record.startRecording()
-        delay(durationSeconds * 1000L)
-
-        var read = 0
-        var zeroByteCount = 0
-        while (read < fftBufferSize) {
-            val result = record.read(readBuffer, read, fftBufferSize - read)
-            if (result < 0) {
-                AppLogger.e("CRITICAL: AudioRecord hardware failed with OS error code: $result")
-                break
-            } else if (result == 0) {
-                zeroByteCount++
-                if (zeroByteCount > 50) {
-                    AppLogger.e("CRITICAL: Mic is engaged but returning 0 bytes. OS is blocking the stream.")
-                    break
-                }
-            } else {
-                read += result
-                zeroByteCount = 0
-            }
+        if (minBufferSize == AudioRecord.ERROR || minBufferSize == AudioRecord.ERROR_BAD_VALUE) {
+            AppLogger.e("AudioRecord: Invalid buffer size for sample rate $preferredSampleRate")
+            return@withContext 0f
         }
-        record.stop()
-        record.release()
 
-        val detectedFrequency = fftEngine.extractDominantFrequency(readBuffer)
+        val record = try {
+            AudioRecord(
+                MediaRecorder.AudioSource.MIC,
+                preferredSampleRate,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                minBufferSize.coerceAtLeast(fftBufferSize * 2)
+            )
+        } catch (e: Exception) {
+            AppLogger.e("Failed to create AudioRecord: ${e.message}")
+            return@withContext 0f
+        }
+
+        if (record.state != AudioRecord.STATE_INITIALIZED) {
+            AppLogger.e("AudioRecord is uninitialized. Mic may be in use or permission not yet granted.")
+            try { record.release() } catch (_: Exception) {}
+            return@withContext 0f
+        }
+
+        val readBuffer = ShortArray(fftBufferSize)
+        var detectedFrequency = 0f
+
+        try {
+            AppLogger.d("Engine: Mic engaged for room analysis ($durationSeconds s)...")
+            record.startRecording()
+
+            val startTimeMs = System.currentTimeMillis()
+            val totalDurationMs = durationSeconds * 1000L
+            var zeroByteCount = 0
+
+            while (System.currentTimeMillis() - startTimeMs < totalDurationMs) {
+                var read = 0
+                while (read < fftBufferSize) {
+                    val result = record.read(readBuffer, read, fftBufferSize - read)
+                    if (result < 0) {
+                        AppLogger.e("CRITICAL: AudioRecord hardware failed with OS error code: $result")
+                        break
+                    } else if (result == 0) {
+                        zeroByteCount++
+                        if (zeroByteCount > com.bted.ahsilence.core.constants.AudioConstants.ZERO_READ_ESCAPE_THRESHOLD) {
+                            AppLogger.e("CRITICAL: Mic is engaged but returning 0 bytes. OS is blocking the stream.")
+                            break
+                        }
+                    } else {
+                        read += result
+                        zeroByteCount = 0
+                    }
+                }
+
+                if (read == fftBufferSize) {
+                    detectedFrequency = fftEngine.extractDominantFrequency(readBuffer)
+                }
+
+                if (zeroByteCount > com.bted.ahsilence.core.constants.AudioConstants.ZERO_READ_ESCAPE_THRESHOLD) break
+            }
+        } catch (e: Exception) {
+            AppLogger.e("Exception during audio capture: ${e.message}")
+        } finally {
+            try {
+                record.stop()
+            } catch (_: Exception) {}
+            try {
+                record.release()
+            } catch (_: Exception) {}
+        }
+
         AppLogger.d("Engine: FFT complete. Handing $detectedFrequency Hz to the native tracker.")
         nativeSetFrequency(nativeHandle, detectedFrequency)
         return@withContext detectedFrequency

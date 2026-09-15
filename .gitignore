@@ -11,7 +11,9 @@ captures/
 *.apk
 *.aab
 *.ap_
+*.aar
 *.dex
+*.class
 
 # ----- IDE & Editor -----
 .idea/

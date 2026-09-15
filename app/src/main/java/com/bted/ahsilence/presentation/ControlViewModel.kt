@@ -74,12 +74,14 @@ class ControlViewModel : ViewModel() {
         )
     }
 
-    fun togglePowerStatus() {
+    fun togglePowerStatus(): Boolean {
+        var isNowOn = false
         _state.update { currentState ->
-            val isNowOn = !currentState.isEmitting
+            isNowOn = !currentState.isEmitting
             AppLogger.d("ViewModel: User toggled power. Emitting state is now: $isNowOn")
             currentState.copy(isEmitting = isNowOn)
         }
+        return isNowOn
     }
 
     override fun onCleared() {

@@ -1,6 +1,8 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 
 namespace anc::dsp {
@@ -53,7 +55,7 @@ public:
         for (std::size_t i = 0; i < L; ++i) {
             y += mWeights[i] * referenceVector[i];
         }
-        return y;
+        return std::isnan(y) ? 0.0f : y;
     }
 
     /**
@@ -70,6 +72,10 @@ public:
      * cause of missed real-time deadlines on some FPUs).
      */
     inline void adapt(const std::array<float, L> &filteredReferenceVector, float error) noexcept {
+        if (std::isnan(error) || std::isinf(error)) {
+            return;
+        }
+
         float power = kEpsilon;
         for (std::size_t i = 0; i < L; ++i) {
             power += filteredReferenceVector[i] * filteredReferenceVector[i];
@@ -77,7 +83,8 @@ public:
         const float mu = mStepSize / power;
 
         for (std::size_t i = 0; i < L; ++i) {
-            mWeights[i] = mLeakage * mWeights[i] - mu * error * filteredReferenceVector[i];
+            float updated = mLeakage * mWeights[i] - mu * error * filteredReferenceVector[i];
+            mWeights[i] = std::isnan(updated) ? 0.0f : std::clamp(updated, -kMaxWeight, kMaxWeight);
         }
     }
 
@@ -89,6 +96,7 @@ public:
 private:
     // Regularization: avoids dividing by ~0 when the reference is briefly silent.
     static constexpr float kEpsilon = 1e-6f;
+    static constexpr float kMaxWeight = 4.0f;
 
     std::array<float, L> mWeights{};
     float mStepSize;

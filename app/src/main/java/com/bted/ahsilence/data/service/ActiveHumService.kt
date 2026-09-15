@@ -50,8 +50,8 @@ class ActiveHumService : Service() {
 
     private fun startForegroundSafely() {
         val notification = NotificationCompat.Builder(this, AudioConstants.NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("AhSilence Active")
-            .setContentText("Phase cancellation is running in the background.")
+            .setContentTitle(getString(com.bted.ahsilence.R.string.notification_title))
+            .setContentText(getString(com.bted.ahsilence.R.string.notification_content))
             .setSmallIcon(android.R.drawable.ic_lock_silent_mode_off)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
@@ -68,7 +68,7 @@ class ActiveHumService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 AudioConstants.NOTIFICATION_CHANNEL_ID,
-                "Active Noise Control",
+                getString(com.bted.ahsilence.R.string.notification_channel_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply { setShowBadge(false) }
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)

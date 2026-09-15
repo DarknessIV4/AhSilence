@@ -1,7 +1,7 @@
 package com.bted.ahsilence.core.constants
 
 object AudioConstants {
-    const val SAMPLE_RATE: Int = 44100
+    const val SAMPLE_RATE: Int = 48000
     const val FFT_BUFFER_SIZE: Int = 8192
     const val AMBIENT_SCAN_DURATION_SECONDS: Int = 7
     const val ZERO_READ_ESCAPE_THRESHOLD: Int = 50
