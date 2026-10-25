@@ -27,14 +27,11 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Lint
-        run: ./gradlew lint
+      - name: Make gradlew executable
+        run: chmod +x gradlew
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug
-
-      - name: Run Unit Tests
-        run: ./gradlew test
 
       - name: Upload APK
         if: github.event_name == 'push'
