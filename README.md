@@ -1,6 +1,7 @@
 <div align="center">
   <img src=".assets/app-banner.png" alt="AhSilence Banner" width="800" style="border-radius: 8px;">
 
+
   <h1>AhSilence</h1>
   <p><strong>Silence the ambient hum. Find your perfect quiet.</strong></p>
 
